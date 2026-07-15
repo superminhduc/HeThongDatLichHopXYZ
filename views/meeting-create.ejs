@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo cuộc họp</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f6f7f9;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 35px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 11px;
+            box-sizing: border-box;
+            border: 1px solid #d1d5db;
+            border-radius: 7px;
+        }
+
+        textarea {
+            min-height: 100px;
+        }
+
+        select[multiple] {
+            min-height: 170px;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 7px;
+            margin-bottom: 18px;
+        }
+
+        .actions {
+            margin-top: 24px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button,
+        .back {
+            padding: 11px 18px;
+            border-radius: 7px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        button {
+            background: #111827;
+            color: white;
+        }
+
+        .back {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        @media (max-width: 700px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Tạo cuộc họp mới</h1>
+        <p>Điền thông tin để lên lịch cuộc họp</p>
+
+        <% if (error) { %>
+            <div class="error"><%= error %></div>
+        <% } %>
+
+        <form action="/meetings/create" method="POST">
+            <div class="grid">
+                <div class="full">
+                    <label>Tiêu đề cuộc họp *</label>
+                    <input type="text" name="title" required>
+                </div>
+
+                <div class="full">
+                    <label>Mô tả</label>
+                    <textarea name="description"></textarea>
+                </div>
+
+                <div>
+                    <label>Ngày họp *</label>
+                    <input type="date" name="meeting_date" required>
+                </div>
+
+                <div>
+                    <label>Địa điểm *</label>
+                    <input type="text" name="location" required>
+                </div>
+
+                <div>
+                    <label>Giờ bắt đầu *</label>
+                    <input type="time" name="start_time" required>
+                </div>
+
+                <div>
+                    <label>Giờ kết thúc *</label>
+                    <input type="time" name="end_time" required>
+                </div>
+
+                <div>
+                    <label>Người tổ chức *</label>
+                    <select name="organizer_id" required>
+                        <option value="">-- Chọn người tổ chức --</option>
+
+                        <% employees.forEach(employee => { %>
+                            <option value="<%= employee.id %>">
+                                <%= employee.full_name %>
+                            </option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <div>
+                    <label>Người tham gia</label>
+
+                    <select name="participants" multiple>
+                        <% employees.forEach(employee => { %>
+                            <option value="<%= employee.id %>">
+                                <%= employee.full_name %>
+                            </option>
+                        <% }) %>
+                    </select>
+
+                    <small>
+                        Giữ Ctrl để chọn nhiều người.
+                    </small>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button type="submit">
+                    Tạo cuộc họp
+                </button>
+
+                <a href="/meetings" class="back">
+                    Quay lại
+                </a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

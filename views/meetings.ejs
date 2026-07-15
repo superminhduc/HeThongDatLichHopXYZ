@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý lịch họp</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f6f7f9;
+            color: #111827;
+        }
+
+        .navbar {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .create-button {
+            background: #111827;
+            color: white;
+            text-decoration: none;
+            padding: 12px 18px;
+            border-radius: 8px;
+        }
+
+        .message {
+            background: #dcfce7;
+            color: #166534;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+        }
+
+        .meeting-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+        }
+
+        .meeting-title {
+            font-size: 19px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .meeting-info {
+            color: #6b7280;
+            margin: 6px 0;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .scheduled {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .completed {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .cancelled {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .actions form {
+            margin: 0;
+        }
+
+        button {
+            border: none;
+            padding: 9px 13px;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+
+        .complete {
+            background: #111827;
+            color: white;
+        }
+
+        .cancel {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .delete {
+            background: #dc2626;
+            color: white;
+        }
+
+        .empty {
+            background: white;
+            padding: 40px;
+            text-align: center;
+            border-radius: 12px;
+            color: #6b7280;
+        }
+        .detail-btn{
+
+            background:#2563eb;
+            color:white;
+            padding:9px 13px;
+            border-radius:7px;
+            text-decoration:none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <div class="brand">Hệ Thống Đặt Lịch Họp</div>
+
+        <a href="/meetings/create" class="create-button">
+            + Tạo cuộc họp
+        </a>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1>Danh sách cuộc họp</h1>
+                <p>Quản lý toàn bộ lịch họp của công ty</p>
+            </div>
+        </div>
+
+        <% if (message) { %>
+            <div class="message"><%= message %></div>
+        <% } %>
+
+        <% if (meetings.length === 0) { %>
+            <div class="empty">
+                Chưa có cuộc họp nào.
+            </div>
+        <% } %>
+
+        <% meetings.forEach(meeting => { %>
+            <div class="meeting-card">
+                <div class="meeting-title">
+                    <%= meeting.title %>
+                </div>
+
+                <div class="meeting-info">
+                    Ngày:
+                    <%= new Date(meeting.meeting_date).toLocaleDateString("vi-VN") %>
+                </div>
+
+                <div class="meeting-info">
+                    Thời gian:
+                    <%= meeting.start_time %> - <%= meeting.end_time %>
+                </div>
+
+                <div class="meeting-info">
+                    Địa điểm:
+                    <%= meeting.location %>
+                </div>
+
+                <div class="meeting-info">
+                    Người tổ chức:
+                    <%= meeting.organizer_name %>
+                </div>
+
+                <div class="meeting-info">
+                    Mô tả:
+                    <%= meeting.description || "Không có mô tả" %>
+                </div>
+
+                <span class="status <%= meeting.status %>">
+                    <% if (meeting.status === "scheduled") { %>
+                        Đã lên lịch
+                    <% } else if (meeting.status === "completed") { %>
+                        Đã hoàn thành
+                    <% } else { %>
+                        Đã hủy
+                    <% } %>
+                </span>
+
+                <div class="actions">
+                    <a
+                        href="/meetings/<%= meeting.id %>"
+                        class="detail-btn"
+                    >
+                        Xem chi tiết
+                    </a>
+                    <% if (meeting.status === "scheduled") { %>
+                        <form
+                            action="/meetings/<%= meeting.id %>/complete"
+                            method="POST"
+                        >
+                            <button class="complete" type="submit">
+                                Đánh dấu hoàn thành
+                            </button>
+                        </form>
+
+                        <form
+                            action="/meetings/<%= meeting.id %>/cancel"
+                            method="POST"
+                        >
+                            <button class="cancel" type="submit">
+                                Hủy cuộc họp
+                            </button>
+                        </form>
+                    <% } %>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+</body>
+</html>
