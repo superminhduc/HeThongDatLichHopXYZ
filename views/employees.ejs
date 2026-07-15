@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Quản lý nhân viên</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f6f8;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        .add-button {
+            background: #111827;
+            color: white;
+            text-decoration: none;
+            padding: 11px 16px;
+            border-radius: 7px;
+        }
+
+        .message {
+            background: #dcfce7;
+            color: #166534;
+            padding: 12px;
+            border-radius: 7px;
+            margin-bottom: 18px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        }
+
+        th,
+        td {
+            padding: 13px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+
+        th {
+            background: #111827;
+            color: white;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .edit {
+            background: #2563eb;
+            color: white;
+            padding: 7px 11px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .delete {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 7px 11px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .active {
+            color: #15803d;
+            font-weight: bold;
+        }
+
+        .inactive {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Quản lý nhân viên</h2>
+            <a href="/employees/create" class="add-button">
+                + Thêm nhân viên
+            </a>
+        </div>
+
+        <% if (message) { %>
+            <div class="message"><%= message %></div>
+        <% } %>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã NV</th>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>SĐT</th>
+                    <th>Phòng ban</th>
+                    <th>Chức vụ</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <% employees.forEach(employee => { %>
+                    <tr>
+                        <td><%= employee.employee_code %></td>
+                        <td><%= employee.full_name %></td>
+                        <td><%= employee.email %></td>
+                        <td><%= employee.phone || "" %></td>
+                        <td><%= employee.department || "" %></td>
+                        <td><%= employee.position || "" %></td>
+
+                        <td>
+                            <% if (employee.status === "active") { %>
+                                <span class="active">Đang làm việc</span>
+                            <% } else { %>
+                                <span class="inactive">Ngừng hoạt động</span>
+                            <% } %>
+                        </td>
+
+                        <td>
+                            <div class="actions">
+                                <a
+                                    href="/employees/edit/<%= employee.id %>"
+                                    class="edit"
+                                >
+                                    Sửa
+                                </a>
+
+                                <form
+                                    action="/employees/delete/<%= employee.id %>"
+                                    method="POST"
+                                    onsubmit="return confirm('Bạn có chắc muốn xóa nhân viên này?')"
+                                >
+                                    <button type="submit" class="delete">
+                                        Xóa
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
