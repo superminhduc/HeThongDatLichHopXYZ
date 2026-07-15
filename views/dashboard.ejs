@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Dashboard lịch họp</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f7f8fa;
+            color: #1f2937;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 235px;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            padding: 26px 18px;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 35px;
+        }
+
+        .menu a {
+            display: block;
+            padding: 13px 15px;
+            margin-bottom: 8px;
+            border-radius: 9px;
+            color: #4b5563;
+            text-decoration: none;
+        }
+
+        .menu a:hover,
+        .menu a.active {
+            background: #111827;
+            color: white;
+        }
+
+        .main {
+            margin-left: 235px;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 76px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 35px;
+        }
+
+        .topbar h2 {
+            margin: 0;
+            font-size: 21px;
+        }
+
+        .create-button {
+            display: inline-block;
+            background: #111827;
+            color: white;
+            padding: 11px 17px;
+            border-radius: 9px;
+            text-decoration: none;
+        }
+
+        .content {
+            padding: 30px 35px;
+        }
+
+        .welcome {
+            margin-bottom: 25px;
+        }
+
+        .welcome h1 {
+            margin: 0 0 7px;
+            font-size: 27px;
+        }
+
+        .welcome p {
+            margin: 0;
+            color: #6b7280;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 13px;
+            padding: 21px;
+        }
+
+        .stat-title {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .stat-number {
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.7fr 1fr;
+            gap: 22px;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 13px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 20px 22px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+        }
+
+        .view-all {
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .meeting-list {
+            padding: 7px 22px;
+        }
+
+        .meeting-item {
+            padding: 17px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .meeting-item:last-child {
+            border-bottom: none;
+        }
+
+        .meeting-title {
+            font-weight: bold;
+            color: #111827;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .meeting-title:hover {
+            color: #2563eb;
+        }
+
+        .meeting-meta {
+            margin-top: 8px;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 45px 20px;
+            color: #6b7280;
+        }
+
+        .quick-actions {
+            padding: 22px;
+        }
+
+        .quick-action {
+            display: block;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 13px;
+            color: #111827;
+            text-decoration: none;
+        }
+
+        .quick-action:hover {
+            background: #f9fafb;
+        }
+
+        .quick-action strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .quick-action span {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        @media (max-width: 1000px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .sidebar {
+                position: static;
+                width: 100%;
+                height: auto;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .topbar {
+                padding: 0 18px;
+            }
+
+            .content {
+                padding: 22px 18px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            Meeting System
+        </div>
+
+        <nav class="menu">
+            <a href="/" class="active">
+                Trang chủ
+            </a>
+
+            <a href="/meetings">
+                Danh sách cuộc họp
+            </a>
+
+            <a href="/meetings/calendar">
+                Lịch cuộc họp
+            </a>
+
+            <a href="/meetings/create">
+                Tạo cuộc họp
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <h2>Quản lý lịch họp</h2>
+
+            <a href="/meetings/create" class="create-button">
+                + Tạo cuộc họp
+            </a>
+        </header>
+
+        <section class="content">
+            <div class="welcome">
+                <h1>Xin chào!</h1>
+
+                <p>
+                    Theo dõi và quản lý các cuộc họp của công ty.
+                </p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">
+                        Cuộc họp hôm nay
+                    </div>
+
+                    <div class="stat-number">
+                        <%= stats.today_count || 0 %>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">
+                        Cuộc họp sắp tới
+                    </div>
+
+                    <div class="stat-number">
+                        <%= stats.upcoming_count || 0 %>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">
+                        Đã hoàn thành
+                    </div>
+
+                    <div class="stat-number">
+                        <%= stats.completed_count || 0 %>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">
+                        Đã hủy
+                    </div>
+
+                    <div class="stat-number">
+                        <%= stats.cancelled_count || 0 %>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Cuộc họp sắp tới</h3>
+
+                        <a href="/meetings" class="view-all">
+                            Xem tất cả
+                        </a>
+                    </div>
+
+                    <% if (upcomingMeetings.length === 0) { %>
+                        <div class="empty">
+                            Chưa có cuộc họp sắp tới.
+                        </div>
+                    <% } else { %>
+                        <div class="meeting-list">
+                            <% upcomingMeetings.forEach(meeting => { %>
+                                <div class="meeting-item">
+                                    <a
+                                        href="/meetings/<%= meeting.id %>"
+                                        class="meeting-title"
+                                    >
+                                        <%= meeting.title %>
+                                    </a>
+
+                                    <div class="meeting-meta">
+                                        <div>
+                                            Ngày:
+                                            <%= new Date(
+                                                meeting.meeting_date
+                                            ).toLocaleDateString("vi-VN") %>
+                                        </div>
+
+                                        <div>
+                                            Thời gian:
+                                            <%= meeting.start_time.substring(0, 5) %>
+                                            -
+                                            <%= meeting.end_time.substring(0, 5) %>
+                                        </div>
+
+                                        <div>
+                                            Địa điểm:
+                                            <%= meeting.location %>
+                                        </div>
+
+                                        <div>
+                                            Người tổ chức:
+                                            <%= meeting.organizer_name %>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% } %>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>Thao tác nhanh</h3>
+                    </div>
+
+                    <div class="quick-actions">
+                        <a
+                            href="/meetings/create"
+                            class="quick-action"
+                        >
+                            <strong>Tạo cuộc họp mới</strong>
+
+                            <span>
+                                Thêm lịch họp và người tham gia.
+                            </span>
+                        </a>
+
+                        <a
+                            href="/meetings"
+                            class="quick-action"
+                        >
+                            <strong>Xem danh sách lịch họp</strong>
+
+                            <span>
+                                Sửa, hủy hoặc hoàn thành cuộc họp.
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

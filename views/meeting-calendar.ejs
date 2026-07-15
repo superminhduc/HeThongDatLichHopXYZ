@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Lịch cuộc họp</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f7f8fa;
+            color: #111827;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 235px;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            padding: 26px 18px;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 35px;
+        }
+
+        .menu a {
+            display: block;
+            padding: 13px 15px;
+            margin-bottom: 8px;
+            border-radius: 9px;
+            color: #4b5563;
+            text-decoration: none;
+        }
+
+        .menu a:hover,
+        .menu a.active {
+            background: #111827;
+            color: white;
+        }
+
+        .main {
+            margin-left: 235px;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 76px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar h2 {
+            margin: 0;
+        }
+
+        .create-button {
+            background: #111827;
+            color: white;
+            padding: 11px 17px;
+            border-radius: 9px;
+            text-decoration: none;
+        }
+
+        .content {
+            padding: 30px 35px;
+        }
+
+        .calendar-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        }
+
+        #calendar {
+            min-height: 700px;
+        }
+
+        .fc .fc-toolbar-title {
+            font-size: 22px;
+        }
+
+        .fc .fc-button {
+            background: #111827;
+            border-color: #111827;
+        }
+
+        .fc .fc-button:hover {
+            background: #374151;
+            border-color: #374151;
+        }
+
+        .fc-event {
+            cursor: pointer;
+            padding: 3px;
+            border: none;
+        }
+
+        @media (max-width: 750px) {
+            .sidebar {
+                position: static;
+                width: 100%;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .topbar {
+                padding: 0 18px;
+            }
+
+            .content {
+                padding: 20px 14px;
+            }
+
+            .calendar-card {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            Meeting System
+        </div>
+
+        <nav class="menu">
+            <a href="/">
+                Trang chủ
+            </a>
+
+            <a href="/meetings">
+                Danh sách cuộc họp
+            </a>
+
+            <a href="/meetings/calendar" class="active">
+                Lịch cuộc họp
+            </a>
+
+            <a href="/meetings/create">
+                Tạo cuộc họp
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <h2>Lịch cuộc họp</h2>
+
+            <a href="/meetings/create" class="create-button">
+                + Tạo cuộc họp
+            </a>
+        </header>
+
+        <section class="content">
+            <div class="calendar-card">
+                <div id="calendar"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const calendarElement =
+                document.getElementById("calendar");
+
+            const calendar = new FullCalendar.Calendar(
+                calendarElement,
+                {
+                    initialView: "dayGridMonth",
+
+                    locale: "vi",
+
+                    firstDay: 1,
+
+                    height: "auto",
+
+                    headerToolbar: {
+                        left: "prev,next today",
+                        center: "title",
+                        right: "dayGridMonth,timeGridWeek,timeGridDay"
+                    },
+
+                    buttonText: {
+                        today: "Hôm nay",
+                        month: "Tháng",
+                        week: "Tuần",
+                        day: "Ngày"
+                    },
+
+                    events: "/meetings/calendar/events",
+
+                    eventDidMount: function (info) {
+                        const props = info.event.extendedProps;
+
+                        info.el.title =
+                            "Địa điểm: " +
+                            (props.location || "Chưa cập nhật") +
+                            "\nNgười tổ chức: " +
+                            (props.organizer || "Chưa cập nhật");
+                    },
+
+                    eventClassNames: function (info) {
+                        const status =
+                            info.event.extendedProps.status;
+
+                        if (status === "completed") {
+                            return ["event-completed"];
+                        }
+
+                        if (status === "cancelled") {
+                            return ["event-cancelled"];
+                        }
+
+                        return ["event-scheduled"];
+                    }
+                }
+            );
+
+            calendar.render();
+        });
+    </script>
+
+    <style>
+        .event-scheduled {
+            background: #2563eb !important;
+        }
+
+        .event-completed {
+            background: #16a34a !important;
+        }
+
+        .event-cancelled {
+            background: #dc2626 !important;
+            text-decoration: line-through;
+        }
+    </style>
+</body>
+</html>

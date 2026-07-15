@@ -9,8 +9,9 @@ const app = express();
 // Kết nối MySQL
 require("./config/db");
 
-// Import route nhân viên
-const employeeRoutes = require("./routes/employeeRoutes");
+// Import route
+const dashboardRoutes = require("./routes/dashboardRoutes");
+const meetingRoutes = require("./routes/meetingRoutes");
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -20,13 +21,11 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// Route trang chủ
-app.get("/", (req, res) => {
-    res.send("<h1>Meeting Scheduling System</h1>");
-});
+// Dashboard
+app.use("/", dashboardRoutes);
 
-// Route nhân viên
-app.use("/employees", employeeRoutes);
+// Quản lý lịch họp
+app.use("/meetings", meetingRoutes);
 
 const PORT = process.env.PORT || 3000;
 
