@@ -103,17 +103,17 @@ function renderCreateError(res, data, errorMessage) {
         getMeetingRooms((roomError, rooms) => {
             if (roomError) {
                 console.error(roomError);
-
-                return res.status(500).send(
-                    "Không thể lấy danh sách phòng họp."
-                );
+                return res.status(500).send("Không thể lấy phòng họp.");
             }
 
-            return res.render("meeting-create", {
+            res.render("meeting-edit", {
+                meeting,
                 employees,
                 rooms,
-                formData: data,
-                error: errorMessage
+                selectedParticipants: participants.map(
+                    participant => Number(participant.id)
+                ),
+                error: ""
             });
         });
     });
@@ -136,14 +136,25 @@ function renderEditError(
             );
         }
 
-        return res.render("meeting-edit", {
-            meeting: {
-                id: meetingId,
-                ...data
-            },
-            employees,
-            selectedParticipants: participants.map(Number),
-            error: errorMessage
+        getMeetingRooms((roomError, rooms) => {
+            if (roomError) {
+                console.error(roomError);
+
+                return res.status(500).send(
+                    "Không thể lấy danh sách phòng họp."
+                );
+            }
+
+            return res.render("meeting-edit", {
+                meeting: {
+                    id: meetingId,
+                    ...data
+                },
+                employees,
+                rooms,
+                selectedParticipants: participants.map(Number),
+                error: errorMessage
+            });
         });
     });
 }
@@ -455,65 +466,68 @@ exports.detail = (req, res) => {
 // ========================================
 
 exports.showEditForm = (req, res) => {
-    const meetingId = Number(req.params.id);
+    const meetingId = req.params.id;
 
-    Meeting.getById(meetingId, (error, meetings) => {
-        if (error) {
-            console.error(error);
-
-            return res.status(500).send(
-                "Không thể lấy thông tin cuộc họp."
-            );
+    Meeting.getById(meetingId, (meetingError, meetingResults) => {
+        if (meetingError) {
+            console.error(meetingError);
+            return res.status(500).send("Không thể lấy thông tin cuộc họp.");
         }
 
-        if (meetings.length === 0) {
-            return res.status(404).send(
-                "Không tìm thấy cuộc họp."
-            );
+        if (!meetingResults.length) {
+            return res.status(404).send("Không tìm thấy cuộc họp.");
         }
 
-        const meeting = meetings[0];
+        const meeting = meetingResults[0];
 
-        if (meeting.status !== "scheduled") {
-            return res.status(400).send(
-                "Chỉ được sửa cuộc họp đang ở trạng thái đã lên lịch."
-            );
-        }
+        Meeting.getParticipants(meetingId, (participantError, participants) => {
+            if (participantError) {
+                console.error(participantError);
+                return res.status(500).send("Không thể lấy người tham gia.");
+            }
 
-        Meeting.getParticipants(
-            meetingId,
-            (participantError, participants) => {
-                if (participantError) {
-                    console.error(participantError);
+            const employeeSql = `
+                SELECT *
+                FROM employees
+                WHERE status = 'active'
+                ORDER BY full_name
+            `;
 
-                    return res.status(500).send(
-                        "Không thể lấy danh sách người tham gia."
-                    );
+            db.query(employeeSql, (employeeError, employees) => {
+                if (employeeError) {
+                    console.error(employeeError);
+                    return res.status(500).send("Không thể lấy nhân viên.");
                 }
 
-                getEmployees(
-                    (employeeError, employees) => {
-                        if (employeeError) {
-                            console.error(employeeError);
+                const roomSql = `
+                    SELECT
+                        id,
+                        location,
+                        room_name,
+                        capacity
+                    FROM meeting_rooms
+                    WHERE status = 'available'
+                    ORDER BY location, room_name
+                `;
 
-                            return res.status(500).send(
-                                "Không thể lấy danh sách nhân viên."
-                            );
-                        }
+                db.query(roomSql, (roomError, rooms) => {
+                    if (roomError) {
+                        console.error(roomError);
+                        return res.status(500).send("Không thể lấy phòng họp.");
+                    };
 
-                        return res.render("meeting-edit", {
-                            meeting,
-                            employees,
-                            selectedParticipants:
-                                participants.map(
-                                    item => item.id
-                                ),
-                            error: ""
-                        });
-                    }
-                );
-            }
-        );
+                res.render("meeting-edit", {
+                    meeting,
+                    employees,
+                    rooms,
+                    selectedParticipants: participants.map(
+                        participant => Number(participant.id)
+                    ),
+                    error: ""
+                });
+                });
+            });
+        });
     });
 };
 
