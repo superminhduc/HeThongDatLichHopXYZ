@@ -1,16 +1,16 @@
-README - ĐỒ ÁN LẬP TRÌNH ỨNG DỤNG WEB
+README - ĐỒ ÁN NHẬP MÔN CÔNG NGHỆ PHẦN MỀM
 ====================================
 
 NHÓM: 6
 HỌC PHẦN: Lập Trình Ứng Dụng Web
-Giảng viên: Trần Công Thanh
+Giảng viên: 
 
 ----------------------------------------------------------------------
 I. THÔNG TIN THÀNH VIÊN
 ----------------------------------------------------------------------
 - 2474802010274 – Trần Phước Nhân – Nhóm trưởng (Database)
 - 2474802010090 – Nguyễn Minh Đức – Thành viên (Frontend)
-- 2474802010571 – Nguyễn Phan Vĩnh Phát – Thành viên (Backend)
+- 2474802010571 – Nguyễn Thái Khang - Thành viên (Backend)
 
 ----------------------------------------------------------------------
 II. MÔ TẢ ĐỀ TÀI
