@@ -515,6 +515,11 @@
 
         updateParticipantOptions();
     </script>
+    <script id="meeting-room-data" type="application/json"><%- JSON.stringify({
+        rooms: rooms || [],
+        previousRoom: formData.room || ""
+    }).replace(/</g, "\\u003c") %></script>
+
     <script>
         const locationSelect =
             document.getElementById("location");
@@ -522,16 +527,42 @@
         const roomSelect =
             document.getElementById("room");
 
-        const meetingRooms = <%- JSON.stringify(rooms) %>;
+        const roomDataElement =
+            document.getElementById("meeting-room-data");
 
-        const previousRoom =
-            "<%= formData.room || '' %>";
+        let roomData = {
+            rooms: [],
+            previousRoom: ""
+        };
+
+        try {
+            roomData = JSON.parse(roomDataElement.textContent);
+        } catch (error) {
+            console.error("Không thể đọc dữ liệu phòng họp:", error);
+        }
+
+        const meetingRooms = Array.isArray(roomData.rooms)
+            ? roomData.rooms
+            : [];
+
+        const previousRoom = String(
+            roomData.previousRoom || ""
+        );
 
         function loadRooms() {
+            if (!locationSelect || !roomSelect) {
+                return;
+            }
+
             const selectedLocation = locationSelect.value;
 
             roomSelect.innerHTML =
                 '<option value="">-- Chọn phòng họp --</option>';
+
+            if (!selectedLocation) {
+                roomSelect.disabled = true;
+                return;
+            }
 
             const filteredRooms = meetingRooms.filter(
                 room => room.location === selectedLocation
@@ -541,28 +572,28 @@
                 const option = document.createElement("option");
 
                 option.value = room.room_name;
-
-                option.textContent =
-                    room.room_name +
+                option.textContent = room.room_name +
                     (room.capacity
                         ? ` - ${room.capacity} người`
                         : "");
 
-                if (room.room_name === previousRoom) {
-                    option.selected = true;
-                }
+                option.selected =
+                    room.room_name === previousRoom;
 
                 roomSelect.appendChild(option);
             });
 
-            roomSelect.disabled = !selectedLocation;
+            roomSelect.disabled = false;
         }
 
-        locationSelect.addEventListener("change", () => {
-            loadRooms();
-        });
+        if (locationSelect && roomSelect) {
+            locationSelect.addEventListener(
+                "change",
+                loadRooms
+            );
 
-        loadRooms();
+            loadRooms();
+        }
     </script>
 </body>
 </html>

@@ -273,14 +273,33 @@
                             <span class="required">*</span>
                         </label>
 
-                        <input
+                        <select
                             id="location"
-                            type="text"
                             name="location"
-                            maxlength="200"
-                            value="<%= meeting.location || '' %>"
+                            class="form-control"
                             required
                         >
+                            <option value="">-- Chọn địa điểm --</option>
+
+                            <%
+                                const locations = [
+                                    ...new Set(
+                                        (rooms || []).map(room => room.location)
+                                    )
+                                ];
+                            %>
+
+                            <% locations.forEach(location => { %>
+                                <option
+                                    value="<%= location %>"
+                                    <%= meeting.location === location
+                                        ? "selected"
+                                        : "" %>
+                                >
+                                    <%= location %>
+                                </option>
+                            <% }) %>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -289,18 +308,17 @@
                             <span class="required">*</span>
                         </label>
 
-                        <input
+                        <select
                             id="room"
-                            type="text"
                             name="room"
-                            maxlength="50"
-                            value="<%= meeting.room || '' %>"
-                            placeholder="Ví dụ: A301"
+                            class="form-control"
                             required
                         >
+                            <option value="">-- Chọn phòng họp --</option>
+                        </select>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group full-width">
                         <label for="organizer_id">
                             Người tổ chức
                             <span class="required">*</span>
@@ -413,12 +431,17 @@
                             multiple
                             required
                         >
+                            <%
+                                const participantIds =
+                                    Array.isArray(selectedParticipants)
+                                        ? selectedParticipants.map(Number)
+                                        : [];
+                            %>
+
                             <% employees.forEach(employee => { %>
                                 <option
                                     value="<%= employee.id %>"
-                                    <%= selectedParticipants
-                                        .map(Number)
-                                        .includes(Number(employee.id))
+                                    <%= participantIds.includes(Number(employee.id))
                                         ? "selected"
                                         : "" %>
                                 >
@@ -505,6 +528,60 @@
         );
 
         updateParticipantOptions();
+    </script>
+    <script id="meeting-rooms-data" type="application/json">
+        <%- JSON.stringify(rooms || []) %>
+    </script>
+    <script>
+        const locationSelect =
+            document.getElementById("location");
+
+        const roomSelect =
+            document.getElementById("room");
+
+        const meetingRooms = JSON.parse(
+            document.getElementById("meeting-rooms-data").textContent
+        );
+
+        const previousRoom =
+            "<%= meeting.room || '' %>";
+
+        function loadRooms() {
+            const selectedLocation = locationSelect.value;
+
+            roomSelect.innerHTML =
+                '<option value="">-- Chọn phòng họp --</option>';
+
+            const filteredRooms = meetingRooms.filter(
+                room => room.location === selectedLocation
+            );
+
+            filteredRooms.forEach(room => {
+                const option = document.createElement("option");
+
+                option.value = room.room_name;
+
+                option.textContent =
+                    room.room_name +
+                    (room.capacity
+                        ? ` - ${room.capacity} người`
+                        : "");
+
+                if (room.room_name === previousRoom) {
+                    option.selected = true;
+                }
+
+                roomSelect.appendChild(option);
+            });
+
+            roomSelect.disabled = !selectedLocation;
+        }
+
+        locationSelect.addEventListener("change", () => {
+            loadRooms();
+        });
+
+        loadRooms();
     </script>
 </body>
 </html>
