@@ -2,56 +2,86 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>Chi tiết cuộc họp</title>
 
+    <link rel="stylesheet" href="/css/app.css">
+
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #f6f7f9;
+            background: #f5f6f8;
             color: #111827;
         }
 
-        .navbar {
-            background: white;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 16px 40px;
-        }
-
-        .navbar a {
-            color: #111827;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .container {
-            max-width: 900px;
+        .page {
+            max-width: 1000px;
             margin: 35px auto;
             padding: 0 20px;
         }
 
-        .card {
-            background: white;
-            border-radius: 14px;
-            padding: 30px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.06);
+        .back-link {
+            display: inline-block;
+            margin-bottom: 18px;
+            color: #374151;
+            text-decoration: none;
+            font-weight: 600;
         }
 
         .message {
-            background: #dcfce7;
+            margin-bottom: 20px;
+            padding: 14px 16px;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            background: #f0fdf4;
             color: #166534;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 18px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .header h1 {
+            margin: 0 0 10px;
+            font-size: 28px;
+        }
+
+        .description {
+            margin: 0;
+            color: #6b7280;
+            line-height: 1.6;
         }
 
         .status {
             display: inline-block;
-            padding: 7px 12px;
+            flex-shrink: 0;
+            padding: 8px 13px;
             border-radius: 999px;
-            font-weight: bold;
-            margin-bottom: 20px;
+            font-size: 13px;
+            font-weight: 700;
         }
 
         .scheduled {
@@ -69,147 +99,329 @@
             color: #b91c1c;
         }
 
-        .info-row {
-            padding: 13px 0;
-            border-bottom: 1px solid #e5e7eb;
+        .section {
+            margin-top: 28px;
         }
 
-        .label {
-            font-weight: bold;
-            display: inline-block;
-            min-width: 150px;
+        .section-title {
+            margin: 0 0 18px;
+            font-size: 19px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .info-item {
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 11px;
+            background: #fafafa;
+        }
+
+        .info-label {
+            display: block;
+            margin-bottom: 7px;
+            color: #6b7280;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-weight: 600;
+            line-height: 1.5;
         }
 
         .participants {
-            margin-top: 25px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
         }
 
         .participant {
-            padding: 12px;
-            background: #f9fafb;
-            border-radius: 8px;
-            margin-bottom: 9px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 11px;
+            background: #fafafa;
+        }
+
+        .participant-name {
+            margin-bottom: 7px;
+            font-weight: 700;
+        }
+
+        .participant-info {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .empty {
+            padding: 24px;
+            border: 1px dashed #d1d5db;
+            border-radius: 11px;
+            color: #6b7280;
+            text-align: center;
         }
 
         .actions {
             display: flex;
-            gap: 10px;
-            margin-top: 28px;
             flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 11px;
+            margin-top: 30px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
         }
 
-        .actions a,
-        .actions button {
-            padding: 10px 15px;
-            border-radius: 7px;
+        .actions form {
+            margin: 0;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 11px 17px;
             border: none;
+            border-radius: 9px;
+            font: inherit;
+            font-weight: 600;
             text-decoration: none;
             cursor: pointer;
         }
 
-        .edit {
-            background: #2563eb;
-            color: white;
-        }
-
-        .complete {
-            background: #111827;
-            color: white;
-        }
-
-        .cancel {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .delete {
-            background: #dc2626;
-            color: white;
-        }
-
-        .back {
+        .button-secondary {
             background: #e5e7eb;
             color: #111827;
         }
 
-        form {
-            margin: 0;
+        .button-edit {
+            background: #2563eb;
+            color: white;
+        }
+
+        .button-complete {
+            background: #15803d;
+            color: white;
+        }
+
+        .button-cancel {
+            background: #dc2626;
+            color: white;
+        }
+
+        @media (max-width: 700px) {
+            .page {
+                margin: 20px auto;
+                padding: 0 12px;
+            }
+
+            .card {
+                padding: 22px 16px;
+            }
+
+            .header {
+                flex-direction: column;
+            }
+
+            .info-grid,
+            .participants {
+                grid-template-columns: 1fr;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .button,
+            .actions form,
+            .actions form button {
+                width: 100%;
+                text-align: center;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="navbar">
-        <a href="/meetings">Hệ Thống Đặt Lịch Họp</a>
-    </div>
+    <main class="page">
+        <a href="/meetings" class="back-link">
+            ← Quay lại danh sách cuộc họp
+        </a>
 
-    <div class="container">
         <% if (message) { %>
-            <div class="message"><%= message %></div>
+            <div class="message">
+                <%= message %>
+            </div>
         <% } %>
 
-        <div class="card">
-            <h1><%= meeting.title %></h1>
+        <section class="card">
+            <div class="header">
+                <div>
+                    <h1><%= meeting.title %></h1>
 
-            <span class="status <%= meeting.status %>">
-                <% if (meeting.status === "scheduled") { %>
-                    Đã lên lịch
-                <% } else if (meeting.status === "completed") { %>
-                    Đã hoàn thành
-                <% } else { %>
-                    Đã hủy
-                <% } %>
-            </span>
+                    <p class="description">
+                        <%= meeting.description || "Không có mô tả." %>
+                    </p>
+                </div>
 
-            <div class="info-row">
-                <span class="label">Ngày họp:</span>
-                <%= new Date(meeting.meeting_date).toLocaleDateString("vi-VN") %>
+                <span class="status <%= meeting.status %>">
+                    <% if (meeting.status === "scheduled") { %>
+                        Đã lên lịch
+                    <% } else if (meeting.status === "completed") { %>
+                        Đã hoàn thành
+                    <% } else if (meeting.status === "cancelled") { %>
+                        Đã hủy
+                    <% } else { %>
+                        <%= meeting.status %>
+                    <% } %>
+                </span>
             </div>
 
-            <div class="info-row">
-                <span class="label">Thời gian:</span>
-                <%= meeting.start_time %> - <%= meeting.end_time %>
+            <div class="section">
+                <h2 class="section-title">
+                    Thông tin cuộc họp
+                </h2>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">
+                            Ngày họp
+                        </span>
+
+                        <div class="info-value">
+                            <%= new Date(
+                                meeting.meeting_date
+                            ).toLocaleDateString("vi-VN") %>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">
+                            Thời gian
+                        </span>
+
+                        <div class="info-value">
+                            <%= String(
+                                meeting.start_time
+                            ).substring(0, 5) %>
+
+                            -
+
+                            <%= String(
+                                meeting.end_time
+                            ).substring(0, 5) %>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">
+                            Địa điểm
+                        </span>
+
+                        <div class="info-value">
+                            <%= meeting.location %>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">
+                            Phòng họp
+                        </span>
+
+                        <div class="info-value">
+                            <%= meeting.room || "Chưa cập nhật" %>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">
+                            Người tổ chức
+                        </span>
+
+                        <div class="info-value">
+                            <%= meeting.organizer_name %>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">
+                            Trạng thái
+                        </span>
+
+                        <div class="info-value">
+                            <% if (meeting.status === "scheduled") { %>
+                                Đã lên lịch
+                            <% } else if (meeting.status === "completed") { %>
+                                Đã hoàn thành
+                            <% } else if (meeting.status === "cancelled") { %>
+                                Đã hủy
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="info-row">
-                <span class="label">Địa điểm:</span>
-                <%= meeting.location %>
-            </div>
-
-            <div class="info-row">
-                <span class="label">Người tổ chức:</span>
-                <%= meeting.organizer_name %>
-            </div>
-
-            <div class="info-row">
-                <span class="label">Mô tả:</span>
-                <%= meeting.description || "Không có mô tả" %>
-            </div>
-
-            <div class="participants">
-                <h3>Người tham gia</h3>
+            <div class="section">
+                <h2 class="section-title">
+                    Người tham gia
+                </h2>
 
                 <% if (participants.length === 0) { %>
-                    <p>Chưa có người tham gia.</p>
-                <% } %>
-
-                <% participants.forEach(person => { %>
-                    <div class="participant">
-                        <strong><%= person.full_name %></strong>
-                        — <%= person.department || "Chưa có phòng ban" %>
-                        <br>
-                        <small><%= person.email %></small>
+                    <div class="empty">
+                        Cuộc họp chưa có người tham gia.
                     </div>
-                <% }) %>
+                <% } else { %>
+                    <div class="participants">
+                        <% participants.forEach(person => { %>
+                            <div class="participant">
+                                <div class="participant-name">
+                                    <%= person.full_name %>
+                                </div>
+
+                                <div class="participant-info">
+                                    <% if (person.employee_code) { %>
+                                        Mã nhân viên:
+                                        <%= person.employee_code %>
+                                        <br>
+                                    <% } %>
+
+                                    <% if (person.department) { %>
+                                        Phòng ban:
+                                        <%= person.department %>
+                                        <br>
+                                    <% } %>
+
+                                    <% if (person.position) { %>
+                                        Chức vụ:
+                                        <%= person.position %>
+                                        <br>
+                                    <% } %>
+
+                                    <% if (person.email) { %>
+                                        Email:
+                                        <%= person.email %>
+                                    <% } %>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } %>
             </div>
 
             <div class="actions">
-                <a href="/meetings" class="back">Quay lại</a>
+                <a
+                    href="/meetings"
+                    class="button button-secondary"
+                >
+                    Quay lại
+                </a>
 
                 <% if (meeting.status === "scheduled") { %>
                     <a
                         href="/meetings/<%= meeting.id %>/edit"
-                        class="edit"
+                        class="button button-edit"
                     >
                         Sửa cuộc họp
                     </a>
@@ -217,8 +429,14 @@
                     <form
                         action="/meetings/<%= meeting.id %>/complete"
                         method="POST"
+                        onsubmit="return confirm(
+                            'Bạn có chắc muốn đánh dấu cuộc họp này đã hoàn thành?'
+                        )"
                     >
-                        <button class="complete" type="submit">
+                        <button
+                            type="submit"
+                            class="button button-complete"
+                        >
                             Hoàn thành
                         </button>
                     </form>
@@ -226,14 +444,20 @@
                     <form
                         action="/meetings/<%= meeting.id %>/cancel"
                         method="POST"
+                        onsubmit="return confirm(
+                            'Bạn có chắc muốn hủy cuộc họp này?'
+                        )"
                     >
-                        <button class="cancel" type="submit">
+                        <button
+                            type="submit"
+                            class="button button-cancel"
+                        >
                             Hủy cuộc họp
                         </button>
                     </form>
                 <% } %>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
 </body>
 </html>

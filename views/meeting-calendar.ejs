@@ -12,6 +12,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
 
+    <link rel="stylesheet" href="/css/app.css">
+    
     <style>
         * {
             box-sizing: border-box;
@@ -20,83 +22,131 @@
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #f7f8fa;
+            background: #f5f6f8;
             color: #111827;
         }
 
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: 235px;
+        .topbar {
+            min-height: 72px;
+            padding: 14px 35px;
             background: white;
-            border-right: 1px solid #e5e7eb;
-            padding: 26px 18px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
         }
 
         .logo {
+            color: #111827;
             font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 35px;
-        }
-
-        .menu a {
-            display: block;
-            padding: 13px 15px;
-            margin-bottom: 8px;
-            border-radius: 9px;
-            color: #4b5563;
+            font-weight: 700;
             text-decoration: none;
         }
 
-        .menu a:hover,
-        .menu a.active {
-            background: #111827;
-            color: white;
-        }
-
-        .main {
-            margin-left: 235px;
-            min-height: 100vh;
-        }
-
-        .topbar {
-            height: 76px;
-            background: white;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 0 35px;
+        .topbar-actions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 10px;
         }
 
-        .topbar h2 {
-            margin: 0;
+        .button {
+            display: inline-block;
+            padding: 11px 16px;
+            border: none;
+            border-radius: 9px;
+            font: inherit;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
         }
 
-        .create-button {
+        .button-primary {
             background: #111827;
             color: white;
-            padding: 11px 17px;
-            border-radius: 9px;
-            text-decoration: none;
         }
 
-        .content {
-            padding: 30px 35px;
+        .button-secondary {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .page {
+            max-width: 1450px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 22px;
+        }
+
+        .page-header h1 {
+            margin: 0 0 8px;
+            font-size: 28px;
+        }
+
+        .page-header p {
+            margin: 0;
+            color: #6b7280;
+        }
+
+        .legend {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 11px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #4b5563;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            width: 13px;
+            height: 13px;
+            border-radius: 4px;
+        }
+
+        .legend-scheduled {
+            background: #2563eb;
+        }
+
+        .legend-completed {
+            background: #16a34a;
+        }
+
+        .legend-cancelled {
+            background: #dc2626;
         }
 
         .calendar-card {
+            padding: 24px;
             background: white;
             border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 24px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            border-radius: 15px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
         }
 
         #calendar {
-            min-height: 700px;
+            min-height: 750px;
+        }
+
+        .fc .fc-toolbar {
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
         .fc .fc-toolbar-title {
@@ -104,8 +154,11 @@
         }
 
         .fc .fc-button {
+            padding: 8px 13px;
             background: #111827;
             border-color: #111827;
+            box-shadow: none;
+            text-transform: none;
         }
 
         .fc .fc-button:hover {
@@ -113,82 +166,196 @@
             border-color: #374151;
         }
 
+        .fc .fc-button-primary:not(:disabled).fc-button-active {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
+        .fc .fc-daygrid-day.fc-day-today,
+        .fc .fc-timegrid-col.fc-day-today {
+            background: #eff6ff;
+        }
+
         .fc-event {
-            cursor: pointer;
-            padding: 3px;
+            padding: 3px 5px;
             border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .event-scheduled {
+            background: #2563eb !important;
+            border-color: #2563eb !important;
+        }
+
+        .event-completed {
+            background: #16a34a !important;
+            border-color: #16a34a !important;
+        }
+
+        .event-cancelled {
+            background: #dc2626 !important;
+            border-color: #dc2626 !important;
+            text-decoration: line-through;
+            opacity: 0.75;
+        }
+
+        .meeting-tooltip {
+            position: fixed;
+            z-index: 9999;
+            display: none;
+            max-width: 320px;
+            padding: 12px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 9px;
+            background: #111827;
+            color: white;
+            font-size: 13px;
+            line-height: 1.6;
+            pointer-events: none;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .loading,
+        .calendar-error {
+            display: none;
+            margin-bottom: 18px;
+            padding: 13px 15px;
+            border-radius: 9px;
+        }
+
+        .loading {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .calendar-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
         }
 
         @media (max-width: 750px) {
-            .sidebar {
-                position: static;
-                width: 100%;
-            }
-
-            .main {
-                margin-left: 0;
-            }
-
             .topbar {
-                padding: 0 18px;
+                align-items: stretch;
+                flex-direction: column;
+                padding: 16px;
             }
 
-            .content {
-                padding: 20px 14px;
+            .topbar-actions {
+                flex-direction: column;
+            }
+
+            .topbar-actions .button {
+                text-align: center;
+            }
+
+            .page {
+                margin: 20px auto;
+                padding: 0 10px;
+            }
+
+            .page-header {
+                flex-direction: column;
             }
 
             .calendar-card {
-                padding: 12px;
+                padding: 10px;
+                overflow-x: auto;
+            }
+
+            #calendar {
+                min-width: 760px;
+            }
+
+            .fc .fc-toolbar {
+                align-items: flex-start;
+                flex-direction: column;
             }
         }
     </style>
 </head>
 
 <body>
-    <aside class="sidebar">
-        <div class="logo">
+    <header class="topbar">
+        <a href="/" class="logo">
             Meeting System
-        </div>
+        </a>
 
-        <nav class="menu">
-            <a href="/">
-                Trang chủ
-            </a>
-
-            <a href="/meetings">
+        <div class="topbar-actions">
+            <a
+                href="/meetings"
+                class="button button-secondary"
+            >
                 Danh sách cuộc họp
             </a>
 
-            <a href="/meetings/calendar" class="active">
-                Lịch cuộc họp
-            </a>
-
-            <a href="/meetings/create">
-                Tạo cuộc họp
-            </a>
-        </nav>
-    </aside>
-
-    <main class="main">
-        <header class="topbar">
-            <h2>Lịch cuộc họp</h2>
-
-            <a href="/meetings/create" class="create-button">
+            <a
+                href="/meetings/create"
+                class="button button-primary"
+            >
                 + Tạo cuộc họp
             </a>
-        </header>
+        </div>
+    </header>
 
-        <section class="content">
-            <div class="calendar-card">
-                <div id="calendar"></div>
+    <main class="page">
+        <div class="page-header">
+            <div>
+                <h1>Lịch cuộc họp</h1>
+
+                <p>
+                    Theo dõi lịch họp theo tháng, tuần hoặc ngày.
+                </p>
             </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <span class="legend-color legend-scheduled"></span>
+                Đã lên lịch
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-color legend-completed"></span>
+                Đã hoàn thành
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-color legend-cancelled"></span>
+                Đã hủy
+            </div>
+        </div>
+
+        <div id="loadingMessage" class="loading">
+            Đang tải dữ liệu lịch họp...
+        </div>
+
+        <div id="calendarError" class="calendar-error">
+            Không thể tải dữ liệu lịch họp.
+        </div>
+
+        <section class="calendar-card">
+            <div id="calendar"></div>
         </section>
     </main>
+
+    <div id="meetingTooltip" class="meeting-tooltip"></div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const calendarElement =
                 document.getElementById("calendar");
+
+            const loadingMessage =
+                document.getElementById("loadingMessage");
+
+            const calendarError =
+                document.getElementById("calendarError");
+
+            const tooltip =
+                document.getElementById("meetingTooltip");
 
             const calendar = new FullCalendar.Calendar(
                 calendarElement,
@@ -201,10 +368,17 @@
 
                     height: "auto",
 
+                    nowIndicator: true,
+
+                    selectable: true,
+
+                    dayMaxEvents: true,
+
                     headerToolbar: {
                         left: "prev,next today",
                         center: "title",
-                        right: "dayGridMonth,timeGridWeek,timeGridDay"
+                        right:
+                            "dayGridMonth,timeGridWeek,timeGridDay"
                     },
 
                     buttonText: {
@@ -214,16 +388,26 @@
                         day: "Ngày"
                     },
 
-                    events: "/meetings/calendar/events",
+                    allDayText: "Cả ngày",
 
-                    eventDidMount: function (info) {
-                        const props = info.event.extendedProps;
+                    slotMinTime: "07:00:00",
 
-                        info.el.title =
-                            "Địa điểm: " +
-                            (props.location || "Chưa cập nhật") +
-                            "\nNgười tổ chức: " +
-                            (props.organizer || "Chưa cập nhật");
+                    slotMaxTime: "22:00:00",
+
+                    events: {
+                        url: "/meetings/calendar/events",
+
+                        method: "GET",
+
+                        failure: function () {
+                            calendarError.style.display =
+                                "block";
+                        }
+                    },
+
+                    loading: function (isLoading) {
+                        loadingMessage.style.display =
+                            isLoading ? "block" : "none";
                     },
 
                     eventClassNames: function (info) {
@@ -239,6 +423,104 @@
                         }
 
                         return ["event-scheduled"];
+                    },
+
+                    eventMouseEnter: function (info) {
+                        const props =
+                            info.event.extendedProps;
+
+                        const startTime =
+                            info.event.start
+                                ? info.event.start.toLocaleTimeString(
+                                    "vi-VN",
+                                    {
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                    }
+                                )
+                                : "";
+
+                        const endTime =
+                            info.event.end
+                                ? info.event.end.toLocaleTimeString(
+                                    "vi-VN",
+                                    {
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                    }
+                                )
+                                : "";
+
+                        tooltip.innerHTML = `
+                            <strong>${info.event.title}</strong>
+                            <br>
+                            Thời gian:
+                            ${startTime}
+                            ${endTime ? " - " + endTime : ""}
+                            <br>
+                            Địa điểm:
+                            ${props.location || "Chưa cập nhật"}
+                            <br>
+                            Phòng:
+                            ${props.room || "Chưa cập nhật"}
+                            <br>
+                            Người tổ chức:
+                            ${props.organizer || "Chưa cập nhật"}
+                        `;
+
+                        tooltip.style.display = "block";
+                    },
+
+                    eventMouseLeave: function () {
+                        tooltip.style.display = "none";
+                    },
+
+                    eventMouseMove: function (event) {
+                        tooltip.style.left =
+                            event.jsEvent.clientX + 15 + "px";
+
+                        tooltip.style.top =
+                            event.jsEvent.clientY + 15 + "px";
+                    },
+
+                    eventClick: function (info) {
+                        info.jsEvent.preventDefault();
+
+                        window.location.href =
+                            `/meetings/${info.event.id}`;
+                    },
+
+                    dateClick: function (info) {
+                        window.location.href =
+                            `/meetings/create?date=${info.dateStr}`;
+                    },
+
+                    select: function (info) {
+                        const selectedDate =
+                            info.startStr.split("T")[0];
+
+                        const startTime =
+                            info.startStr.includes("T")
+                                ? info.startStr
+                                    .split("T")[1]
+                                    .substring(0, 5)
+                                : "";
+
+                        const endTime =
+                            info.endStr.includes("T")
+                                ? info.endStr
+                                    .split("T")[1]
+                                    .substring(0, 5)
+                                : "";
+
+                        const query = new URLSearchParams({
+                            date: selectedDate,
+                            start: startTime,
+                            end: endTime
+                        });
+
+                        window.location.href =
+                            `/meetings/create?${query.toString()}`;
                     }
                 }
             );
@@ -246,20 +528,5 @@
             calendar.render();
         });
     </script>
-
-    <style>
-        .event-scheduled {
-            background: #2563eb !important;
-        }
-
-        .event-completed {
-            background: #16a34a !important;
-        }
-
-        .event-cancelled {
-            background: #dc2626 !important;
-            text-decoration: line-through;
-        }
-    </style>
 </body>
 </html>
