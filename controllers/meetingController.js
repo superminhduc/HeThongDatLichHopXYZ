@@ -1,28 +1,60 @@
 const Meeting = require("../models/meetingModel");
 const db = require("../config/db");
 
+// ========================================
+// HÀM HỖ TRỢ
+// ========================================
+
+// Lấy danh sách nhân viên đang hoạt động
 function getEmployees(callback) {
-    db.query(
-        `
-        SELECT *
+    const sql = `
+        SELECT
+            id,
+            employee_code,
+            full_name,
+            email,
+            department,
+            position
         FROM employees
         WHERE status = 'active'
-        ORDER BY full_name
-        `,
-        callback
-    );
+        ORDER BY full_name ASC
+    `;
+
+    db.query(sql, callback);
 }
 
+// Lấy danh sách phòng còn hoạt động
+function getMeetingRooms(callback) {
+    const sql = `
+        SELECT
+            id,
+            location,
+            room_name,
+            capacity
+        FROM meeting_rooms
+        WHERE status = 'available'
+        ORDER BY location ASC, room_name ASC
+    `;
+
+    db.query(sql, callback);
+}
+
+// Chuyển người tham gia về dạng mảng
 function normalizeParticipants(participants) {
     if (!participants) {
         return [];
     }
 
-    return Array.isArray(participants)
+    const values = Array.isArray(participants)
         ? participants
         : [participants];
+
+    return values
+        .map(Number)
+        .filter(id => Number.isInteger(id) && id > 0);
 }
 
+// Kiểm tra dữ liệu cuộc họp
 function validateMeeting(data) {
     if (
         !data.title ||
@@ -30,296 +62,454 @@ function validateMeeting(data) {
         !data.start_time ||
         !data.end_time ||
         !data.location ||
+        !data.room ||
         !data.organizer_id
     ) {
-        return "Vui lòng nhập đầy đủ thông tin bắt buộc.";
+        return "Vui lòng nhập đầy đủ các thông tin bắt buộc.";
     }
 
     if (data.end_time <= data.start_time) {
         return "Giờ kết thúc phải lớn hơn giờ bắt đầu.";
     }
 
+    const selectedDate = new Date(
+        `${data.meeting_date}T${data.start_time}:00`
+    );
+
+    const currentTime = new Date();
+
+    if (Number.isNaN(selectedDate.getTime())) {
+        return "Ngày hoặc giờ họp không hợp lệ.";
+    }
+
+    if (selectedDate < currentTime) {
+        return "Không được tạo cuộc họp trong quá khứ.";
+    }
+
     return "";
 }
 
-exports.index = (req, res) => {
-    Meeting.getAll((err, meetings) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send("Không thể lấy danh sách cuộc họp");
+// Hiển thị lại form tạo và thông báo lỗi
+function renderCreateError(res, data, errorMessage) {
+    getEmployees((employeeError, employees) => {
+        if (employeeError) {
+            console.error(employeeError);
+
+            return res.status(500).send(
+                "Không thể lấy danh sách nhân viên."
+            );
         }
 
-        res.render("meetings", {
+        getMeetingRooms((roomError, rooms) => {
+            if (roomError) {
+                console.error(roomError);
+
+                return res.status(500).send(
+                    "Không thể lấy danh sách phòng họp."
+                );
+            }
+
+            return res.render("meeting-create", {
+                employees,
+                rooms,
+                formData: data,
+                error: errorMessage
+            });
+        });
+    });
+}
+
+// Hiển thị lại form sửa và thông báo lỗi
+function renderEditError(
+    res,
+    meetingId,
+    data,
+    participants,
+    errorMessage
+) {
+    getEmployees((employeeError, employees) => {
+        if (employeeError) {
+            console.error(employeeError);
+
+            return res.status(500).send(
+                "Không thể lấy danh sách nhân viên."
+            );
+        }
+
+        return res.render("meeting-edit", {
+            meeting: {
+                id: meetingId,
+                ...data
+            },
+            employees,
+            selectedParticipants: participants.map(Number),
+            error: errorMessage
+        });
+    });
+}
+
+// Lưu người tham gia của cuộc họp
+function insertParticipants(meetingId, participantIds, callback) {
+    if (participantIds.length === 0) {
+        return callback(null);
+    }
+
+    const values = participantIds.map(employeeId => [
+        Number(meetingId),
+        Number(employeeId)
+    ]);
+
+    const sql = `
+        INSERT INTO meeting_participants (
+            meeting_id,
+            employee_id
+        )
+        VALUES ?
+    `;
+
+    db.query(sql, [values], callback);
+}
+
+// ========================================
+// DANH SÁCH CUỘC HỌP
+// ========================================
+
+exports.index = (req, res) => {
+    Meeting.getAll((error, meetings) => {
+        if (error) {
+            console.error(error);
+
+            return res.status(500).send(
+                "Không thể lấy danh sách cuộc họp."
+            );
+        }
+
+        return res.render("meetings", {
             meetings,
             message: req.query.message || ""
         });
     });
 };
 
+// ========================================
+// FORM TẠO CUỘC HỌP
+// ========================================
+
 exports.showCreateForm = (req, res) => {
-    getEmployees((err, employees) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send("Không thể lấy danh sách nhân viên");
+    getEmployees((employeeError, employees) => {
+        if (employeeError) {
+            console.error(employeeError);
+
+            return res.status(500).send(
+                "Không thể lấy danh sách nhân viên."
+            );
         }
 
-        res.render("meeting-create", {
-            employees,
-            error: "",
-            formData: {}
+        getMeetingRooms((roomError, rooms) => {
+            if (roomError) {
+                console.error(roomError);
+
+                return res.status(500).send(
+                    "Không thể lấy danh sách phòng họp."
+                );
+            }
+
+            return res.render("meeting-create", {
+                employees,
+                rooms,
+                error: "",
+                formData: {}
+            });
         });
     });
 };
+
+// ========================================
+// TẠO CUỘC HỌP
+// ========================================
 
 exports.create = (req, res) => {
     const data = req.body;
-    const error = validateMeeting(data);
-    const participants = normalizeParticipants(data.participants);
+    const validationError = validateMeeting(data);
 
-    const employeeIds = [
-        Number(data.organizer_id),
-        ...participants.map(Number)
-    ];
+    const participants = normalizeParticipants(
+        data.participants
+    );
 
-    const uniqueEmployeeIds = [...new Set(employeeIds)];
-
-    if (error) {
-        return getEmployees((err, employees) => {
-            if (err) {
-                return res.status(500).send("Không thể lấy danh sách nhân viên");
-            }
-
-            res.render("meeting-create", {
-                employees,
-                error,
-                formData: data
-            });
-        });
+    if (validationError) {
+        return renderCreateError(
+            res,
+            data,
+            validationError
+        );
     }
 
     if (participants.length === 0) {
-        return getEmployees((err, employees) => {
-            if (err) {
-                return res.status(500).send("Không thể lấy danh sách nhân viên");
-            }
-
-            res.render("meeting-create", {
-                employees,
-                error: "Vui lòng chọn ít nhất một người tham gia.",
-                formData: data
-            });
-        });
+        return renderCreateError(
+            res,
+            data,
+            "Vui lòng chọn ít nhất một người tham gia."
+        );
     }
 
-    Meeting.checkEmployeeConflict(
-    data.meeting_date,
-    data.start_time,
-    data.end_time,
-    uniqueEmployeeIds,
-    (conflictError, conflicts) => {
-        if (conflictError) {
-            console.error(conflictError);
+    const organizerId = Number(data.organizer_id);
 
-            return res.status(500).send(
-                "Không thể kiểm tra lịch của nhân viên"
-            );
-        }
+    if (!Number.isInteger(organizerId) || organizerId <= 0) {
+        return renderCreateError(
+            res,
+            data,
+            "Người tổ chức không hợp lệ."
+        );
+    }
 
-        if (conflicts.length > 0) {
-            const conflictNames = [
-                ...new Set(
-                    conflicts.map(item => item.full_name)
-                )
-            ].join(", ");
+    if (participants.includes(organizerId)) {
+        return renderCreateError(
+            res,
+            data,
+            "Người tổ chức không được nằm trong danh sách người tham gia."
+        );
+    }
 
-            return getEmployees((employeeError, employees) => {
-                if (employeeError) {
-                    return res.status(500).send(
-                        "Không thể lấy danh sách nhân viên"
-                    );
-                }
+    const uniqueParticipants = [
+        ...new Set(participants)
+    ];
 
-                return res.render("meeting-create", {
-                    employees,
-                    formData: data,
-                    error:
-                        `Nhân viên ${conflictNames} đã có lịch họp ` +
-                        `trùng với khoảng thời gian này.`
-                });
-            });
-        }
+    if (
+        uniqueParticipants.length !==
+        participants.length
+    ) {
+        return renderCreateError(
+            res,
+            data,
+            "Danh sách người tham gia đang có nhân viên bị chọn trùng."
+        );
+    }
 
-        Meeting.create(data, (createError, result) => {
-            if (createError) {
-                console.error(createError);
+    const employeeIds = [
+        organizerId,
+        ...uniqueParticipants
+    ];
+
+    // Bước 1: Kiểm tra trùng phòng
+    Meeting.checkRoomConflict(
+        data,
+        null,
+        (roomError, roomConflicts) => {
+            if (roomError) {
+                console.error(roomError);
 
                 return res.status(500).send(
-                    "Không thể tạo cuộc họp"
+                    "Không thể kiểm tra lịch phòng họp."
                 );
             }
 
-            const meetingId = result.insertId;
+            if (roomConflicts.length > 0) {
+                const conflict = roomConflicts[0];
 
-            const values = participants.map(employeeId => [
-                meetingId,
-                employeeId
-            ]);
+                return renderCreateError(
+                    res,
+                    data,
+                    `Phòng ${data.room} đã có cuộc họp ` +
+                    `"${conflict.title}" từ ` +
+                    `${String(conflict.start_time).substring(0, 5)} ` +
+                    `đến ${String(conflict.end_time).substring(0, 5)}.`
+                );
+            }
 
-            db.query(
-                `
-                INSERT INTO meeting_participants
-                (meeting_id, employee_id)
-                VALUES ?
-                `,
-                [values],
-                participantError => {
-                    if (participantError) {
-                        console.error(participantError);
+            // Bước 2: Kiểm tra lịch nhân viên
+            Meeting.checkEmployeeConflict(
+                data.meeting_date,
+                data.start_time,
+                data.end_time,
+                employeeIds,
+                null,
+                (employeeError, employeeConflicts) => {
+                    if (employeeError) {
+                        console.error(employeeError);
 
                         return res.status(500).send(
-                            "Không thể lưu người tham gia"
+                            "Không thể kiểm tra lịch nhân viên."
                         );
                     }
 
-                    res.redirect(
-                        `/meetings/${meetingId}` +
-                        `?message=Tạo cuộc họp thành công`
+                    if (employeeConflicts.length > 0) {
+                        const names = [
+                            ...new Set(
+                                employeeConflicts.map(
+                                    item => item.full_name
+                                )
+                            )
+                        ];
+
+                        const meetingTitles = [
+                            ...new Set(
+                                employeeConflicts.map(
+                                    item => item.title
+                                )
+                            )
+                        ];
+
+                        return renderCreateError(
+                            res,
+                            data,
+                            `Nhân viên bị trùng lịch: ` +
+                            `${names.join(", ")}. ` +
+                            `Cuộc họp đang diễn ra: ` +
+                            `${meetingTitles.join(", ")}.`
+                        );
+                    }
+
+                    // Bước 3: Lưu cuộc họp
+                    Meeting.create(
+                        data,
+                        (createError, result) => {
+                            if (createError) {
+                                console.error(createError);
+
+                                return res.status(500).send(
+                                    "Không thể tạo cuộc họp."
+                                );
+                            }
+
+                            const meetingId =
+                                result.insertId;
+
+                            // Bước 4: Lưu người tham gia
+                            insertParticipants(
+                                meetingId,
+                                uniqueParticipants,
+                                participantError => {
+                                    if (participantError) {
+                                        console.error(
+                                            participantError
+                                        );
+
+                                        return res
+                                            .status(500)
+                                            .send(
+                                                "Đã tạo cuộc họp nhưng không thể lưu người tham gia."
+                                            );
+                                    }
+
+                                    return res.redirect(
+                                        `/meetings/${meetingId}` +
+                                        `?message=${encodeURIComponent(
+                                            "Tạo cuộc họp thành công"
+                                        )}`
+                                    );
+                                }
+                            );
+                        }
                     );
                 }
             );
-        });
-    }
-);
+        }
+    );
+};
 
-   };
+// ========================================
+// CHI TIẾT CUỘC HỌP
+// ========================================
 
 exports.detail = (req, res) => {
-    Meeting.getById(req.params.id, (err, meetings) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send("Không thể lấy cuộc họp");
+    const meetingId = Number(req.params.id);
+
+    Meeting.getById(meetingId, (error, meetings) => {
+        if (error) {
+            console.error(error);
+
+            return res.status(500).send(
+                "Không thể lấy thông tin cuộc họp."
+            );
         }
 
         if (meetings.length === 0) {
-            return res.status(404).send("Không tìm thấy cuộc họp");
+            return res.status(404).send(
+                "Không tìm thấy cuộc họp."
+            );
         }
 
-        Meeting.getParticipants(req.params.id, (err, participants) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).send(
-                    "Không thể lấy danh sách người tham gia"
-                );
-            }
+        Meeting.getParticipants(
+            meetingId,
+            (participantError, participants) => {
+                if (participantError) {
+                    console.error(participantError);
 
-            res.render("meeting-detail", {
-                meeting: meetings[0],
-                participants,
-                message: req.query.message || ""
-            });
-        });
+                    return res.status(500).send(
+                        "Không thể lấy danh sách người tham gia."
+                    );
+                }
+
+                return res.render("meeting-detail", {
+                    meeting: meetings[0],
+                    participants,
+                    message: req.query.message || ""
+                });
+            }
+        );
     });
 };
+
+// ========================================
+// FORM SỬA CUỘC HỌP
+// ========================================
 
 exports.showEditForm = (req, res) => {
-    Meeting.getById(req.params.id, (err, meetings) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send("Không thể lấy cuộc họp");
+    const meetingId = Number(req.params.id);
+
+    Meeting.getById(meetingId, (error, meetings) => {
+        if (error) {
+            console.error(error);
+
+            return res.status(500).send(
+                "Không thể lấy thông tin cuộc họp."
+            );
         }
 
         if (meetings.length === 0) {
-            return res.status(404).send("Không tìm thấy cuộc họp");
+            return res.status(404).send(
+                "Không tìm thấy cuộc họp."
+            );
         }
 
-        Meeting.getParticipants(req.params.id, (err, participants) => {
-            if (err) {
-                return res.status(500).send(
-                    "Không thể lấy danh sách người tham gia"
-                );
-            }
+        const meeting = meetings[0];
 
-            getEmployees((err, employees) => {
-                if (err) {
+        if (meeting.status !== "scheduled") {
+            return res.status(400).send(
+                "Chỉ được sửa cuộc họp đang ở trạng thái đã lên lịch."
+            );
+        }
+
+        Meeting.getParticipants(
+            meetingId,
+            (participantError, participants) => {
+                if (participantError) {
+                    console.error(participantError);
+
                     return res.status(500).send(
-                        "Không thể lấy danh sách nhân viên"
+                        "Không thể lấy danh sách người tham gia."
                     );
                 }
 
-                res.render("meeting-edit", {
-                    meeting: meetings[0],
-                    employees,
-                    selectedParticipants: participants.map(item => item.id),
-                    error: ""
-                });
-            });
-        });
-    });
-};
+                getEmployees(
+                    (employeeError, employees) => {
+                        if (employeeError) {
+                            console.error(employeeError);
 
-exports.update = (req, res) => {
-    const data = req.body;
-    const error = validateMeeting(data);
-    const participants = normalizeParticipants(data.participants);
-
-    if (error || participants.length === 0) {
-        return getEmployees((err, employees) => {
-            if (err) {
-                return res.status(500).send(
-                    "Không thể lấy danh sách nhân viên"
-                );
-            }
-
-            res.render("meeting-edit", {
-                meeting: {
-                    id: req.params.id,
-                    ...data
-                },
-                employees,
-                selectedParticipants: participants.map(Number),
-                error: error || "Vui lòng chọn ít nhất một người tham gia."
-            });
-        });
-    }
-
-    Meeting.update(req.params.id, data, err => {
-        if (err) {
-            console.error(err);
-            return res.status(500).send("Không thể cập nhật cuộc họp");
-        }
-
-        db.query(
-            "DELETE FROM meeting_participants WHERE meeting_id = ?",
-            [req.params.id],
-            err => {
-                if (err) {
-                    return res.status(500).send(
-                        "Không thể cập nhật người tham gia"
-                    );
-                }
-
-                const values = participants.map(employeeId => [
-                    req.params.id,
-                    employeeId
-                ]);
-
-                db.query(
-                    `
-                    INSERT INTO meeting_participants
-                    (meeting_id, employee_id)
-                    VALUES ?
-                    `,
-                    [values],
-                    err => {
-                        if (err) {
                             return res.status(500).send(
-                                "Không thể lưu người tham gia"
+                                "Không thể lấy danh sách nhân viên."
                             );
                         }
 
-                        res.redirect(
-                            `/meetings/${req.params.id}?message=Cập nhật cuộc họp thành công`
-                        );
+                        return res.render("meeting-edit", {
+                            meeting,
+                            employees,
+                            selectedParticipants:
+                                participants.map(
+                                    item => item.id
+                                ),
+                            error: ""
+                        });
                     }
                 );
             }
@@ -327,64 +517,362 @@ exports.update = (req, res) => {
     });
 };
 
+// ========================================
+// CẬP NHẬT CUỘC HỌP
+// ========================================
+
+exports.update = (req, res) => {
+    const meetingId = Number(req.params.id);
+    const data = req.body;
+
+    const validationError = validateMeeting(data);
+
+    const participants = normalizeParticipants(
+        data.participants
+    );
+
+    if (validationError) {
+        return renderEditError(
+            res,
+            meetingId,
+            data,
+            participants,
+            validationError
+        );
+    }
+
+    if (participants.length === 0) {
+        return renderEditError(
+            res,
+            meetingId,
+            data,
+            participants,
+            "Vui lòng chọn ít nhất một người tham gia."
+        );
+    }
+
+    const organizerId = Number(data.organizer_id);
+
+    if (participants.includes(organizerId)) {
+        return renderEditError(
+            res,
+            meetingId,
+            data,
+            participants,
+            "Người tổ chức không được nằm trong danh sách người tham gia."
+        );
+    }
+
+    const uniqueParticipants = [
+        ...new Set(participants)
+    ];
+
+    if (
+        uniqueParticipants.length !==
+        participants.length
+    ) {
+        return renderEditError(
+            res,
+            meetingId,
+            data,
+            participants,
+            "Danh sách người tham gia đang có nhân viên bị chọn trùng."
+        );
+    }
+
+    const employeeIds = [
+        organizerId,
+        ...uniqueParticipants
+    ];
+
+    // Kiểm tra phòng, bỏ qua cuộc họp đang sửa
+    Meeting.checkRoomConflict(
+        data,
+        meetingId,
+        (roomError, roomConflicts) => {
+            if (roomError) {
+                console.error(roomError);
+
+                return res.status(500).send(
+                    "Không thể kiểm tra lịch phòng họp."
+                );
+            }
+
+            if (roomConflicts.length > 0) {
+                const conflict = roomConflicts[0];
+
+                return renderEditError(
+                    res,
+                    meetingId,
+                    data,
+                    uniqueParticipants,
+                    `Phòng ${data.room} đã có cuộc họp ` +
+                    `"${conflict.title}" từ ` +
+                    `${String(conflict.start_time).substring(0, 5)} ` +
+                    `đến ${String(conflict.end_time).substring(0, 5)}.`
+                );
+            }
+
+            // Kiểm tra lịch nhân viên
+            Meeting.checkEmployeeConflict(
+                data.meeting_date,
+                data.start_time,
+                data.end_time,
+                employeeIds,
+                meetingId,
+                (
+                    employeeError,
+                    employeeConflicts
+                ) => {
+                    if (employeeError) {
+                        console.error(employeeError);
+
+                        return res.status(500).send(
+                            "Không thể kiểm tra lịch nhân viên."
+                        );
+                    }
+
+                    if (employeeConflicts.length > 0) {
+                        const names = [
+                            ...new Set(
+                                employeeConflicts.map(
+                                    item => item.full_name
+                                )
+                            )
+                        ];
+
+                        return renderEditError(
+                            res,
+                            meetingId,
+                            data,
+                            uniqueParticipants,
+                            `Nhân viên bị trùng lịch: ` +
+                            `${names.join(", ")}.`
+                        );
+                    }
+
+                    // Cập nhật thông tin cuộc họp
+                    Meeting.update(
+                        meetingId,
+                        data,
+                        updateError => {
+                            if (updateError) {
+                                console.error(updateError);
+
+                                return res.status(500).send(
+                                    "Không thể cập nhật cuộc họp."
+                                );
+                            }
+
+                            // Xóa danh sách người tham gia cũ
+                            db.query(
+                                `
+                                DELETE FROM meeting_participants
+                                WHERE meeting_id = ?
+                                `,
+                                [meetingId],
+                                deleteError => {
+                                    if (deleteError) {
+                                        console.error(
+                                            deleteError
+                                        );
+
+                                        return res
+                                            .status(500)
+                                            .send(
+                                                "Không thể cập nhật danh sách người tham gia."
+                                            );
+                                    }
+
+                                    // Thêm lại danh sách mới
+                                    insertParticipants(
+                                        meetingId,
+                                        uniqueParticipants,
+                                        participantError => {
+                                            if (
+                                                participantError
+                                            ) {
+                                                console.error(
+                                                    participantError
+                                                );
+
+                                                return res
+                                                    .status(500)
+                                                    .send(
+                                                        "Không thể lưu danh sách người tham gia."
+                                                    );
+                                            }
+
+                                            return res.redirect(
+                                                `/meetings/${meetingId}` +
+                                                `?message=${encodeURIComponent(
+                                                    "Cập nhật cuộc họp thành công"
+                                                )}`
+                                            );
+                                        }
+                                    );
+                                }
+                            );
+                        }
+                    );
+                }
+            );
+        }
+    );
+};
+
+// ========================================
+// HOÀN THÀNH CUỘC HỌP
+// ========================================
+
 exports.complete = (req, res) => {
-    Meeting.updateStatus(req.params.id, "completed", err => {
-        if (err) {
-            return res.status(500).send("Không thể cập nhật trạng thái");
+    const meetingId = Number(req.params.id);
+
+    Meeting.getById(meetingId, (findError, meetings) => {
+        if (findError) {
+            console.error(findError);
+
+            return res.status(500).send(
+                "Không thể kiểm tra cuộc họp."
+            );
         }
 
-        res.redirect(
-            `/meetings/${req.params.id}?message=Đã đánh dấu hoàn thành`
+        if (meetings.length === 0) {
+            return res.status(404).send(
+                "Không tìm thấy cuộc họp."
+            );
+        }
+
+        if (meetings[0].status !== "scheduled") {
+            return res.status(400).send(
+                "Cuộc họp này không thể đánh dấu hoàn thành."
+            );
+        }
+
+        Meeting.updateStatus(
+            meetingId,
+            "completed",
+            error => {
+                if (error) {
+                    console.error(error);
+
+                    return res.status(500).send(
+                        "Không thể cập nhật trạng thái."
+                    );
+                }
+
+                return res.redirect(
+                    `/meetings/${meetingId}` +
+                    `?message=${encodeURIComponent(
+                        "Đã đánh dấu cuộc họp hoàn thành"
+                    )}`
+                );
+            }
         );
     });
 };
+
+// ========================================
+// HỦY CUỘC HỌP
+// ========================================
 
 exports.cancel = (req, res) => {
-    Meeting.updateStatus(req.params.id, "cancelled", err => {
-        if (err) {
-            return res.status(500).send("Không thể hủy cuộc họp");
+    const meetingId = Number(req.params.id);
+
+    Meeting.getById(meetingId, (findError, meetings) => {
+        if (findError) {
+            console.error(findError);
+
+            return res.status(500).send(
+                "Không thể kiểm tra cuộc họp."
+            );
         }
 
-        res.redirect(
-            `/meetings/${req.params.id}?message=Đã hủy cuộc họp`
+        if (meetings.length === 0) {
+            return res.status(404).send(
+                "Không tìm thấy cuộc họp."
+            );
+        }
+
+        if (meetings[0].status !== "scheduled") {
+            return res.status(400).send(
+                "Chỉ được hủy cuộc họp đang ở trạng thái đã lên lịch."
+            );
+        }
+
+        Meeting.updateStatus(
+            meetingId,
+            "cancelled",
+            error => {
+                if (error) {
+                    console.error(error);
+
+                    return res.status(500).send(
+                        "Không thể hủy cuộc họp."
+                    );
+                }
+
+                return res.redirect(
+                    `/meetings/${meetingId}` +
+                    `?message=${encodeURIComponent(
+                        "Đã hủy cuộc họp"
+                    )}`
+                );
+            }
         );
     });
 };
 
+// ========================================
+// TRANG CALENDAR
+// ========================================
+
 exports.calendar = (req, res) => {
-    res.render("meeting-calendar");
+    return res.render("meeting-calendar");
 };
 
+// ========================================
+// API DỮ LIỆU CALENDAR
+// ========================================
+
 exports.getCalendarEvents = (req, res) => {
-    Meeting.getAll((err, meetings) => {
-        if (err) {
-            console.error(err);
+    Meeting.getAll((error, meetings) => {
+        if (error) {
+            console.error(error);
 
             return res.status(500).json({
-                message: "Không thể tải dữ liệu lịch họp"
+                message: "Không thể tải dữ liệu lịch họp."
             });
         }
 
         const events = meetings.map(meeting => {
-            const meetingDate = new Date(meeting.meeting_date)
-                .toISOString()
-                .split("T")[0];
+            const date = new Date(meeting.meeting_date);
+
+            const meetingDate = [
+                date.getFullYear(),
+                String(date.getMonth() + 1).padStart(2, "0"),
+                String(date.getDate()).padStart(2, "0")
+            ].join("-");
 
             return {
                 id: meeting.id,
                 title: meeting.title,
-                start: `${meetingDate}T${meeting.start_time}`,
-                end: `${meetingDate}T${meeting.end_time}`,
-                url: `/meetings/${meeting.id}`,
+
+                start:
+                    `${meetingDate}T${meeting.start_time}`,
+
+                end:
+                    `${meetingDate}T${meeting.end_time}`,
 
                 extendedProps: {
                     location: meeting.location,
+                    room: meeting.room,               // thêm dòng này
                     organizer: meeting.organizer_name,
                     status: meeting.status
                 }
             };
         });
 
-        res.json(events);
+        return res.json(events);
     });
 };
