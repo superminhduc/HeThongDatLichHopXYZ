@@ -1,7 +1,7 @@
 README - ĐỒ ÁN NHẬP MÔN CÔNG NGHỆ PHẦN MỀM
 ====================================
 
-NHÓM: 6
+NHÓM: 3
 HỌC PHẦN: Lập Trình Ứng Dụng Web
 Giảng viên: 
 
