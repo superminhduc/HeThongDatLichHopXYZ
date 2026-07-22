@@ -87,9 +87,7 @@ function validateMeeting(data) {
     }
 
     return "";
-}
-
-// Hiển thị lại form tạo và thông báo lỗi
+}// Hiển thị lại form tạo và thông báo lỗi
 function renderCreateError(res, data, errorMessage) {
     getEmployees((employeeError, employees) => {
         if (employeeError) {
@@ -103,22 +101,28 @@ function renderCreateError(res, data, errorMessage) {
         getMeetingRooms((roomError, rooms) => {
             if (roomError) {
                 console.error(roomError);
-                return res.status(500).send("Không thể lấy phòng họp.");
+
+                return res.status(500).send(
+                    "Không thể lấy phòng họp."
+                );
             }
 
-            res.render("meeting-edit", {
-                meeting,
+            const selectedParticipants = Array.isArray(data.participants)
+                ? data.participants.map(id => Number(id))
+                : data.participants
+                    ? [Number(data.participants)]
+                    : [];
+
+            return res.render("meeting-create", {
                 employees,
                 rooms,
-                selectedParticipants: participants.map(
-                    participant => Number(participant.id)
-                ),
-                error: ""
+                formData: data,
+                selectedParticipants,
+                error: errorMessage
             });
         });
     });
 }
-
 // Hiển thị lại form sửa và thông báo lỗi
 function renderEditError(
     res,
