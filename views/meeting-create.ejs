@@ -1,4 +1,488 @@
-<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tạo cuộc họp</title><link rel="stylesheet" href="/css/app.css"></head><body>
-<header class="app-shell-header"><div class="app-shell-top"><div class="shell-inner"><a href="/" class="app-shell-brand"><svg class="icon icon-lg brand-mark" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg><span>Hệ Thống Đặt Lịch Họp</span></a><a href="/meetings/create" class="shell-create">＋ Tạo Cuộc Họp</a></div></div><nav class="app-shell-nav"><div class="nav-inner"><a class="nav-link" href="/">Trang Chủ</a><a class="nav-link" href="/meetings">Danh Sách Cuộc Họp</a></div></nav></header>
-<main class="page-shell"><a href="/meetings" class="back-link">←</a><div class="form-title-row"><h1>Tạo Cuộc Họp Mới</h1><p>Điền thông tin để lên lịch cuộc họp</p></div><% if(error){ %><div class="alert alert-error"><strong>Không thể tạo cuộc họp:</strong><br><%= error %></div><% } %><form action="/meetings/create" method="POST" class="meeting-form-grid"><section class="card form-panel"><h2>Thông Tin Cơ Bản</h2><p class="panel-note">Nhập thông tin chi tiết về cuộc họp</p><div class="field-stack"><div><label for="title">Tiêu đề cuộc họp <span class="required">*</span></label><input id="title" name="title" maxlength="200" value="<%= formData.title || '' %>" placeholder="VD: Họp Kickoff Dự Án Q1" required></div><div><label for="description">Mô tả</label><textarea id="description" name="description" placeholder="Mô tả chi tiết về cuộc họp..."><%= formData.description || '' %></textarea></div><div><label for="organizer_id">Người tổ chức <span class="required">*</span></label><select id="organizer_id" name="organizer_id" required><option value="">VD: Nguyễn Văn A</option><% employees.forEach(employee=>{ %><option value="<%= employee.id %>" <%= Number(formData.organizer_id)===Number(employee.id)?'selected':'' %>><%= employee.full_name %><%= employee.department?' - '+employee.department:'' %></option><% }) %></select></div><div class="field-row"><div><label for="location">Địa điểm <span class="required">*</span></label><select id="location" name="location" required><option value="">-- Chọn địa điểm --</option><% const locations=[...new Set(rooms.map(room=>room.location))]; locations.forEach(location=>{ %><option value="<%= location %>" <%= formData.location===location?'selected':'' %>><%= location %></option><% }) %></select></div><div><label for="room">Phòng họp <span class="required">*</span></label><select id="room" name="room" required><option value="">-- Chọn phòng họp --</option></select></div></div></div></section><div class="form-right-stack"><section class="card form-panel"><h2>Thời Gian</h2><p class="panel-note">Chọn ngày và giờ cho cuộc họp</p><div class="field-stack"><div><label for="meeting_date">Ngày <span class="required">*</span></label><input id="meeting_date" type="date" name="meeting_date" value="<%= formData.meeting_date || '' %>" required></div><div class="field-row"><div><label for="start_time">Giờ bắt đầu <span class="required">*</span></label><input id="start_time" type="time" name="start_time" value="<%= formData.start_time || '' %>" required></div><div><label for="end_time">Giờ kết thúc <span class="required">*</span></label><input id="end_time" type="time" name="end_time" value="<%= formData.end_time || '' %>" required></div></div></div></section><section class="card form-panel participant-picker"><h2>Người Tham Gia</h2><p class="panel-note">Thêm người tham dự cuộc họp</p><div class="field-stack"><div><label for="participants">Nhân viên được mời <span class="required">*</span></label><select id="participants" name="participants" multiple required><% employees.forEach(employee=>{ const sp=Array.isArray(formData.participants)?formData.participants:(formData.participants?[formData.participants]:[]); %><option value="<%= employee.id %>" <%= sp.map(Number).includes(Number(employee.id))?'selected':'' %>><%= employee.full_name %><%= employee.department?' - '+employee.department:'' %><%= employee.position?' - '+employee.position:'' %></option><% }) %></select><span class="help-text">Giữ Ctrl để chọn nhiều nhân viên.</span></div></div></section></div><div class="form-actions"><a href="/meetings" class="button button-secondary">Hủy</a><button type="submit" class="button button-primary">Tạo Cuộc Họp</button></div></form></main>
-<script>const meetingDateInput=document.getElementById('meeting_date'),organizerSelect=document.getElementById('organizer_id'),participantSelect=document.getElementById('participants'),today=new Date(),localToday=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');meetingDateInput.min=localToday;function updateParticipantOptions(){const organizerId=organizerSelect.value;Array.from(participantSelect.options).forEach(option=>{const isOrganizer=organizerId&&option.value===organizerId;option.disabled=isOrganizer;if(isOrganizer)option.selected=false})}organizerSelect.addEventListener('change',updateParticipantOptions);updateParticipantOptions();</script><script id="meeting-room-data" type="application/json"><%- JSON.stringify({rooms:rooms||[],previousRoom:formData.room||''}).replace(/</g,'\\u003c') %></script><script>const locationSelect=document.getElementById('location'),roomSelect=document.getElementById('room');let roomData={rooms:[],previousRoom:''};try{roomData=JSON.parse(document.getElementById('meeting-room-data').textContent)}catch(e){console.error(e)}const meetingRooms=Array.isArray(roomData.rooms)?roomData.rooms:[],previousRoom=String(roomData.previousRoom||'');function loadRooms(){const selectedLocation=locationSelect.value;roomSelect.innerHTML='<option value="">-- Chọn phòng họp --</option>';if(!selectedLocation){roomSelect.disabled=true;return}meetingRooms.filter(room=>room.location===selectedLocation).forEach(room=>{const option=document.createElement('option');option.value=room.room_name;option.textContent=room.room_name+(room.capacity?' - '+room.capacity+' người':'');option.selected=room.room_name===previousRoom;roomSelect.appendChild(option)});roomSelect.disabled=false}locationSelect.addEventListener('change',loadRooms);loadRooms();</script></body></html>
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tạo cuộc họp</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+
+<body>
+    <header class="app-shell-header">
+        <div class="app-shell-top">
+            <div class="shell-inner">
+                <a href="/" class="app-shell-brand">
+                    <svg class="icon icon-lg brand-mark" viewBox="0 0 24 24">
+                        <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                        <path d="M16 3v4M8 3v4M3 11h18"></path>
+                    </svg>
+                    <span>Hệ Thống Đặt Lịch Họp</span>
+                </a>
+
+                <a href="/meetings/create" class="shell-create">
+                    ＋ Tạo Cuộc Họp
+                </a>
+            </div>
+        </div>
+
+        <nav class="app-shell-nav">
+            <div class="nav-inner">
+                <a class="nav-link" href="/">Trang Chủ</a>
+                <a class="nav-link" href="/meetings">Danh Sách Cuộc Họp</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="page-shell">
+        <a href="/meetings" class="back-link">←</a>
+
+        <div class="form-title-row">
+            <h1>Tạo Cuộc Họp Mới</h1>
+            <p>Điền thông tin để lên lịch cuộc họp</p>
+        </div>
+
+        <% if (error) { %>
+            <div class="alert alert-error">
+                <strong>Không thể tạo cuộc họp:</strong>
+                <br>
+                <%= error %>
+            </div>
+        <% } %>
+
+        <%
+            const safeRooms = Array.isArray(rooms) ? rooms : [];
+
+            const locations = [
+                ...new Set(
+                    safeRooms.map(room => room.location)
+                )
+            ];
+
+            const selectedStartTime =
+                String(formData.start_time || "").substring(0, 5);
+
+            const selectedEndTime =
+                String(formData.end_time || "").substring(0, 5);
+
+            const selectedParticipantIds =
+                Array.isArray(formData.participants)
+                    ? formData.participants.map(Number)
+                    : formData.participants
+                        ? [Number(formData.participants)]
+                        : [];
+        %>
+
+        <form
+            action="/meetings/create"
+            method="POST"
+            class="meeting-form-grid"
+        >
+            <section class="card form-panel">
+                <h2>Thông Tin Cơ Bản</h2>
+                <p class="panel-note">Nhập thông tin chi tiết về cuộc họp</p>
+
+                <div class="field-stack">
+                    <div>
+                        <label for="title">
+                            Tiêu đề cuộc họp
+                            <span class="required">*</span>
+                        </label>
+
+                        <input
+                            id="title"
+                            type="text"
+                            name="title"
+                            maxlength="200"
+                            value="<%= formData.title || '' %>"
+                            placeholder="VD: Họp Kickoff Dự Án Q1"
+                            required
+                        >
+                    </div>
+
+                    <div>
+                        <label for="description">Mô tả</label>
+
+                        <textarea
+                            id="description"
+                            name="description"
+                            placeholder="Mô tả chi tiết về cuộc họp..."
+                        ><%= formData.description || '' %></textarea>
+                    </div>
+
+                    <div>
+                        <label for="organizer_id">
+                            Người tổ chức
+                            <span class="required">*</span>
+                        </label>
+
+                        <select
+                            id="organizer_id"
+                            name="organizer_id"
+                            required
+                        >
+                            <option value="">
+                                -- Chọn người tổ chức --
+                            </option>
+
+                            <% employees.forEach(employee => { %>
+                                <option
+                                    value="<%= employee.id %>"
+                                    <%= Number(formData.organizer_id) === Number(employee.id)
+                                        ? "selected"
+                                        : "" %>
+                                >
+                                    <%= employee.full_name %>
+
+                                    <% if (employee.department) { %>
+                                        - <%= employee.department %>
+                                    <% } %>
+                                </option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div class="field-row">
+                        <div>
+                            <label for="location">
+                                Địa điểm
+                                <span class="required">*</span>
+                            </label>
+
+                            <select
+                                id="location"
+                                name="location"
+                                required
+                            >
+                                <option value="">
+                                    -- Chọn địa điểm --
+                                </option>
+
+                                <% locations.forEach(location => { %>
+                                    <option
+                                        value="<%= location %>"
+                                        <%= formData.location === location
+                                            ? "selected"
+                                            : "" %>
+                                    >
+                                        <%= location %>
+                                    </option>
+                                <% }) %>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="room">
+                                Phòng họp
+                                <span class="required">*</span>
+                            </label>
+
+                            <select
+                                id="room"
+                                name="room"
+                                required
+                            >
+                                <option value="">
+                                    -- Chọn phòng họp --
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="form-right-stack">
+                <section class="card form-panel">
+                    <h2>Thời Gian</h2>
+                    <p class="panel-note">Chọn ngày và giờ cho cuộc họp</p>
+
+                    <div class="field-stack">
+                        <div>
+                            <label for="meeting_date">
+                                Ngày
+                                <span class="required">*</span>
+                            </label>
+
+                            <input
+                                id="meeting_date"
+                                type="date"
+                                name="meeting_date"
+                                value="<%= formData.meeting_date || '' %>"
+                                required
+                            >
+                        </div>
+
+                        <div class="field-row">
+                            <div>
+                                <label for="start_time">
+                                    Giờ bắt đầu
+                                    <span class="required">*</span>
+                                </label>
+
+                                <select id="start_time" name="start_time" required>
+                                    <option value="">-- Chọn giờ bắt đầu --</option>
+
+                                    <% for (let hour = 0; hour < 24; hour++) { %>
+                                        <% for (let minute = 0; minute < 60; minute += 30) { %>
+                                            <%
+                                                const timeValue =
+                                                    String(hour).padStart(2, "0") +
+                                                    ":" +
+                                                    String(minute).padStart(2, "0");
+                                            %>
+
+                                            <option
+                                                value="<%= timeValue %>"
+                                                <%= selectedStartTime === timeValue
+                                                    ? "selected"
+                                                    : "" %>
+                                            >
+                                                <%= timeValue %>
+                                            </option>
+                                        <% } %>
+                                    <% } %>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="end_time">
+                                    Giờ kết thúc
+                                    <span class="required">*</span>
+                                </label>
+
+                                <select id="end_time" name="end_time" required>
+                                    <option value="">-- Chọn giờ kết thúc --</option>
+
+                                    <% for (let hour = 0; hour < 24; hour++) { %>
+                                        <% for (let minute = 0; minute < 60; minute += 30) { %>
+                                            <%
+                                                const timeValue =
+                                                    String(hour).padStart(2, "0") +
+                                                    ":" +
+                                                    String(minute).padStart(2, "0");
+                                            %>
+
+                                            <option
+                                                value="<%= timeValue %>"
+                                                <%= selectedEndTime === timeValue
+                                                    ? "selected"
+                                                    : "" %>
+                                            >
+                                                <%= timeValue %>
+                                            </option>
+                                        <% } %>
+                                    <% } %>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card form-panel participant-picker">
+                    <h2>Người Tham Gia</h2>
+                    <p class="panel-note">Thêm người tham dự cuộc họp</p>
+
+                    <div class="field-stack">
+                        <div>
+                            <label for="participants">
+                                Nhân viên được mời
+                                <span class="required">*</span>
+                            </label>
+
+                            <select
+                                id="participants"
+                                name="participants"
+                                multiple
+                                required
+                            >
+                                <% employees.forEach(employee => { %>
+                                    <option
+                                        value="<%= employee.id %>"
+                                        <%= selectedParticipantIds.includes(
+                                            Number(employee.id)
+                                        )
+                                            ? "selected"
+                                            : "" %>
+                                    >
+                                        <%= employee.full_name %>
+
+                                        <% if (employee.department) { %>
+                                            - <%= employee.department %>
+                                        <% } %>
+
+                                        <% if (employee.position) { %>
+                                            - <%= employee.position %>
+                                        <% } %>
+                                    </option>
+                                <% }) %>
+                            </select>
+
+                            <span class="help-text">
+                                Giữ Ctrl để chọn nhiều nhân viên.
+                                Người tổ chức không được chọn trong danh sách người tham gia.
+                            </span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="form-actions">
+                <a href="/meetings" class="button button-secondary">
+                    Hủy
+                </a>
+
+                <button type="submit" class="button button-primary">
+                    Tạo Cuộc Họp
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script
+        id="meeting-room-data"
+        type="application/json"
+    ><%- JSON.stringify({
+        rooms: safeRooms,
+        previousRoom: formData.room || ""
+    }).replace(/</g, "\\u003c") %></script>
+
+    <script>
+        const meetingDateInput =
+            document.getElementById("meeting_date");
+
+        const organizerSelect =
+            document.getElementById("organizer_id");
+
+        const participantSelect =
+            document.getElementById("participants");
+
+        const locationSelect =
+            document.getElementById("location");
+
+        const roomSelect =
+            document.getElementById("room");
+
+        const today = new Date();
+
+        const localToday = [
+            today.getFullYear(),
+            String(today.getMonth() + 1).padStart(2, "0"),
+            String(today.getDate()).padStart(2, "0")
+        ].join("-");
+
+        if (meetingDateInput) {
+            meetingDateInput.min = localToday;
+        }
+
+        function updateParticipantOptions() {
+            if (!organizerSelect || !participantSelect) {
+                return;
+            }
+
+            const organizerId =
+                organizerSelect.value;
+
+            Array.from(
+                participantSelect.options
+            ).forEach(option => {
+                const isOrganizer =
+                    organizerId &&
+                    option.value === organizerId;
+
+                option.disabled =
+                    Boolean(isOrganizer);
+
+                if (isOrganizer) {
+                    option.selected = false;
+                }
+            });
+        }
+
+        let roomData = {
+            rooms: [],
+            previousRoom: ""
+        };
+
+        try {
+            roomData = JSON.parse(
+                document
+                    .getElementById("meeting-room-data")
+                    .textContent
+            );
+        } catch (error) {
+            console.error(error);
+        }
+
+        const meetingRooms =
+            Array.isArray(roomData.rooms)
+                ? roomData.rooms
+                : [];
+
+        const previousRoom =
+            String(roomData.previousRoom || "");
+
+        function loadRooms() {
+            if (!locationSelect || !roomSelect) {
+                return;
+            }
+
+            const selectedLocation =
+                locationSelect.value;
+
+            roomSelect.innerHTML =
+                '<option value="">-- Chọn phòng họp --</option>';
+
+            if (!selectedLocation) {
+                roomSelect.disabled = true;
+                return;
+            }
+
+            meetingRooms
+                .filter(
+                    room =>
+                        room.location === selectedLocation
+                )
+                .forEach(room => {
+                    const option =
+                        document.createElement("option");
+
+                    option.value =
+                        room.room_name;
+
+                    option.textContent =
+                        room.room_name +
+                        (
+                            room.capacity
+                                ? ` - ${room.capacity} người`
+                                : ""
+                        );
+
+                    option.selected =
+                        room.room_name === previousRoom;
+
+                    roomSelect.appendChild(option);
+                });
+
+            roomSelect.disabled = false;
+        }
+
+        if (organizerSelect) {
+            organizerSelect.addEventListener(
+                "change",
+                updateParticipantOptions
+            );
+        }
+
+        if (locationSelect) {
+            locationSelect.addEventListener(
+                "change",
+                loadRooms
+            );
+        }
+
+        updateParticipantOptions();
+        loadRooms();
+    </script>
+</body>
+
+</html>

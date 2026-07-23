@@ -255,6 +255,16 @@
                             >
                         </div>
 
+                        <%
+                            const selectedStartTime =
+                                String(meeting.start_time || "")
+                                    .substring(0, 5);
+
+                            const selectedEndTime =
+                                String(meeting.end_time || "")
+                                    .substring(0, 5);
+                        %>
+
                         <div class="field-row">
                             <div>
                                 <label for="start_time">
@@ -262,15 +272,29 @@
                                     <span class="required">*</span>
                                 </label>
 
-                                <input
-                                    id="start_time"
-                                    type="time"
-                                    name="start_time"
-                                    value="<%= meeting.start_time
-                                        ? String(meeting.start_time).substring(0, 5)
-                                        : '' %>"
-                                    required
-                                >
+                                <select id="start_time" name="start_time" required>
+                                    <option value="">-- Chọn giờ bắt đầu --</option>
+
+                                    <% for (let hour = 0; hour < 24; hour++) { %>
+                                        <% for (let minute = 0; minute < 60; minute += 30) { %>
+                                            <%
+                                                const timeValue =
+                                                    String(hour).padStart(2, "0") +
+                                                    ":" +
+                                                    String(minute).padStart(2, "0");
+                                            %>
+
+                                            <option
+                                                value="<%= timeValue %>"
+                                                <%= selectedStartTime === timeValue
+                                                    ? "selected"
+                                                    : "" %>
+                                            >
+                                                <%= timeValue %>
+                                            </option>
+                                        <% } %>
+                                    <% } %>
+                                </select>
                             </div>
 
                             <div>
@@ -279,15 +303,29 @@
                                     <span class="required">*</span>
                                 </label>
 
-                                <input
-                                    id="end_time"
-                                    type="time"
-                                    name="end_time"
-                                    value="<%= meeting.end_time
-                                        ? String(meeting.end_time).substring(0, 5)
-                                        : '' %>"
-                                    required
-                                >
+                                <select id="end_time" name="end_time" required>
+                                    <option value="">-- Chọn giờ kết thúc --</option>
+
+                                    <% for (let hour = 0; hour < 24; hour++) { %>
+                                        <% for (let minute = 0; minute < 60; minute += 30) { %>
+                                            <%
+                                                const timeValue =
+                                                    String(hour).padStart(2, "0") +
+                                                    ":" +
+                                                    String(minute).padStart(2, "0");
+                                            %>
+
+                                            <option
+                                                value="<%= timeValue %>"
+                                                <%= selectedEndTime === timeValue
+                                                    ? "selected"
+                                                    : "" %>
+                                            >
+                                                <%= timeValue %>
+                                            </option>
+                                        <% } %>
+                                    <% } %>
+                                </select>
                             </div>
                         </div>
                     </div>
